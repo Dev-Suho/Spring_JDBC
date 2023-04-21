@@ -1,6 +1,5 @@
 package hello.jdbc.repository;
 
-import hello.jdbc.connection.DBConnectionUtil;
 import hello.jdbc.domain.Member;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.support.JdbcUtils;
@@ -10,15 +9,15 @@ import java.sql.*;
 import java.util.NoSuchElementException;
 
 /**
- * DataSource, JdbcUtils 사용
+ *  Jdbc - ConnectionParam
  */
 
 @Slf4j
-public class MemberRepositoryV1 {
+public class MemberRepositoryV2 {
 
     private final DataSource dataSource;
 
-    public MemberRepositoryV1(DataSource dataSource) {
+    public MemberRepositoryV2(DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
@@ -83,6 +82,36 @@ public class MemberRepositoryV1 {
             throw e;
         } finally {
             close(con, pstmt, rs);
+        }
+    }
+
+    public Member findById(Connection con, String fromId) throws SQLException {
+        String sql = "select * from member where member_id = ?";
+
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, fromId);
+
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                Member member = new Member();
+                member.setMemberId(rs.getString("member_id"));
+                member.setMoney(rs.getInt("money"));
+                return member;
+            } else {
+                throw new NoSuchElementException("member not found memberId=" + fromId);
+            }
+
+        } catch (SQLException e) {
+            log.error("db error", e);
+            throw e;
+        } finally {
+            // connection은 여기서 닫지 않는다.
+            JdbcUtils.closeResultSet(rs);
+            JdbcUtils.closeStatement(pstmt);
         }
     }
 
